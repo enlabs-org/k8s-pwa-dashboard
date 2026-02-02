@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: k8s-pwa-dashboard
-  namespace: k8s-dashboard
   labels:
     app.kubernetes.io/name: k8s-pwa-dashboard
 spec:
