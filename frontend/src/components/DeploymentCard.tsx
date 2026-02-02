@@ -1,6 +1,7 @@
 import { Deployment } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { ScaleControls } from './ScaleControls';
+import { useTheme, colors } from '../context/ThemeContext';
 
 interface DeploymentCardProps {
   deployment: Deployment;
@@ -11,18 +12,21 @@ interface DeploymentCardProps {
 
 export function DeploymentCard({ deployment, onScale, isScaling, scalingEnabled }: DeploymentCardProps) {
   const { name, status, replicas, urls } = deployment;
+  const { theme } = useTheme();
+  const c = colors[theme];
 
   return (
     <div
       style={{
         padding: '16px',
-        backgroundColor: '#fff',
+        backgroundColor: c.bgCard,
         borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        boxShadow: theme === 'light' ? '0 1px 3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.3)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '16px',
+        transition: 'background-color 0.2s',
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -32,7 +36,7 @@ export function DeploymentCard({ deployment, onScale, isScaling, scalingEnabled 
               margin: 0,
               fontSize: '16px',
               fontWeight: 600,
-              color: '#111827',
+              color: c.text,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -43,12 +47,12 @@ export function DeploymentCard({ deployment, onScale, isScaling, scalingEnabled 
           <StatusBadge status={status} />
         </div>
 
-        <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: '#6b7280', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: c.textSecondary, flexWrap: 'wrap' }}>
           <span>
-            Replicas: <strong style={{ color: '#111827' }}>{replicas.ready}/{replicas.desired}</strong>
+            Replicas: <strong style={{ color: c.text }}>{replicas.ready}/{replicas.desired}</strong>
           </span>
           {replicas.unavailable > 0 && (
-            <span style={{ color: '#dc2626' }}>
+            <span style={{ color: '#ef4444' }}>
               Unavailable: {replicas.unavailable}
             </span>
           )}
@@ -67,7 +71,7 @@ export function DeploymentCard({ deployment, onScale, isScaling, scalingEnabled 
                   color: '#3b82f6',
                   textDecoration: 'none',
                   padding: '2px 6px',
-                  backgroundColor: '#eff6ff',
+                  backgroundColor: theme === 'light' ? '#eff6ff' : '#1e3a5f',
                   borderRadius: '4px',
                 }}
               >

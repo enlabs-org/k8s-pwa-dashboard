@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useDeployments } from '../hooks/useDeployments';
 import { AppConfig, Deployment } from '../types';
 import { NamespaceSection } from './NamespaceSection';
+import { useTheme, colors } from '../context/ThemeContext';
 
 interface DashboardProps {
   config: AppConfig;
@@ -13,6 +14,8 @@ export function Dashboard({ config }: DashboardProps) {
 
   const [collapsedAll, setCollapsedAll] = useState<boolean | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { theme } = useTheme();
+  const c = colors[theme];
 
   // Group deployments by namespace and get unique namespaces
   const { groupedDeployments, namespaces } = useMemo(() => {
@@ -53,32 +56,33 @@ export function Dashboard({ config }: DashboardProps) {
           display: 'flex',
           gap: '24px',
           padding: '16px 24px',
-          backgroundColor: '#fff',
+          backgroundColor: c.bgCard,
           borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          boxShadow: theme === 'light' ? '0 1px 3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.3)',
           marginBottom: '24px',
           flexWrap: 'wrap',
+          transition: 'background-color 0.2s',
         }}
       >
         <div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>{summary.total}</div>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>Total</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: c.text }}>{summary.total}</div>
+          <div style={{ fontSize: '14px', color: c.textSecondary }}>Total</div>
         </div>
         <div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#166534' }}>{summary.running}</div>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>Running</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#22c55e' }}>{summary.running}</div>
+          <div style={{ fontSize: '14px', color: c.textSecondary }}>Running</div>
         </div>
         <div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#991b1b' }}>{summary.error}</div>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>Error</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#ef4444' }}>{summary.error}</div>
+          <div style={{ fontSize: '14px', color: c.textSecondary }}>Error</div>
         </div>
         <div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#854d0e' }}>{summary.pending}</div>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>Pending</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#eab308' }}>{summary.pending}</div>
+          <div style={{ fontSize: '14px', color: c.textSecondary }}>Pending</div>
         </div>
         <div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#374151' }}>{summary.scaledToZero}</div>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>Stopped</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: c.textSecondary }}>{summary.scaledToZero}</div>
+          <div style={{ fontSize: '14px', color: c.textSecondary }}>Stopped</div>
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -89,11 +93,13 @@ export function Dashboard({ config }: DashboardProps) {
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
               padding: '8px 12px',
-              border: '1px solid #d1d5db',
+              border: `1px solid ${c.inputBorder}`,
               borderRadius: '6px',
               fontSize: '14px',
               width: '200px',
               outline: 'none',
+              backgroundColor: c.inputBg,
+              color: c.text,
             }}
           />
         </div>
@@ -103,8 +109,8 @@ export function Dashboard({ config }: DashboardProps) {
             onClick={() => setCollapsedAll(false)}
             style={{
               padding: '8px 12px',
-              backgroundColor: '#e5e7eb',
-              color: '#374151',
+              backgroundColor: theme === 'light' ? '#e5e7eb' : '#374151',
+              color: theme === 'light' ? '#374151' : '#e5e7eb',
               border: 'none',
               borderRadius: '6px',
               fontSize: '13px',
@@ -118,8 +124,8 @@ export function Dashboard({ config }: DashboardProps) {
             onClick={() => setCollapsedAll(true)}
             style={{
               padding: '8px 12px',
-              backgroundColor: '#e5e7eb',
-              color: '#374151',
+              backgroundColor: theme === 'light' ? '#e5e7eb' : '#374151',
+              color: theme === 'light' ? '#374151' : '#e5e7eb',
               border: 'none',
               borderRadius: '6px',
               fontSize: '13px',

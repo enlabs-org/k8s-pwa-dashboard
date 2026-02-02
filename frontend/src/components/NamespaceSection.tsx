@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Deployment } from '../types';
 import { DeploymentCard } from './DeploymentCard';
+import { useTheme, colors } from '../context/ThemeContext';
 
 interface NamespaceSectionProps {
   namespaceName: string;
@@ -29,6 +30,8 @@ export function NamespaceSection({
   onToggle,
 }: NamespaceSectionProps) {
   const [localCollapsed, setLocalCollapsed] = useState(false);
+  const { theme } = useTheme();
+  const c = colors[theme];
 
   // Sync local state when global state changes
   useEffect(() => {
@@ -74,7 +77,7 @@ export function NamespaceSection({
             lineHeight: '20px',
             textAlign: 'center',
             fontSize: '12px',
-            color: '#6b7280',
+            color: c.textSecondary,
             transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0)',
             transition: 'transform 0.2s',
           }}
@@ -82,11 +85,11 @@ export function NamespaceSection({
           ▼
         </span>
 
-        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#111827' }}>
+        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: c.text }}>
           {namespaceName}
         </h2>
 
-        <span style={{ fontSize: '14px', color: '#6b7280' }}>
+        <span style={{ fontSize: '14px', color: c.textSecondary }}>
           ({deployments.length} deployment{deployments.length !== 1 ? 's' : ''})
         </span>
 
@@ -96,8 +99,8 @@ export function NamespaceSection({
               padding: '2px 8px',
               borderRadius: '4px',
               fontSize: '12px',
-              backgroundColor: '#fee2e2',
-              color: '#991b1b',
+              backgroundColor: theme === 'light' ? '#fee2e2' : '#7f1d1d',
+              color: theme === 'light' ? '#991b1b' : '#fecaca',
             }}
           >
             {errorCount} error{errorCount !== 1 ? 's' : ''}
@@ -110,8 +113,8 @@ export function NamespaceSection({
               padding: '2px 8px',
               borderRadius: '4px',
               fontSize: '12px',
-              backgroundColor: '#dcfce7',
-              color: '#166534',
+              backgroundColor: theme === 'light' ? '#dcfce7' : '#14532d',
+              color: theme === 'light' ? '#166534' : '#bbf7d0',
             }}
           >
             {runningCount} running
@@ -122,7 +125,7 @@ export function NamespaceSection({
       {!isCollapsed && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '32px' }}>
           {sortedDeployments.length === 0 ? (
-            <p style={{ color: '#6b7280', fontStyle: 'italic' }}>No deployments in this namespace</p>
+            <p style={{ color: c.textSecondary, fontStyle: 'italic' }}>No deployments in this namespace</p>
           ) : (
             sortedDeployments.map((deployment) => (
               <DeploymentCard
