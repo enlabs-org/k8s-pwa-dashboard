@@ -3,6 +3,8 @@ import { Deployment } from '../types';
 import { DeploymentCard } from './DeploymentCard';
 import { useTheme, colors } from '../context/ThemeContext';
 
+type SortOption = 'status' | 'name-asc' | 'name-desc' | 'replicas-desc';
+
 interface NamespaceSectionProps {
   namespaceName: string;
   deployments: Deployment[];
@@ -11,6 +13,7 @@ interface NamespaceSectionProps {
   scalingEnabled: boolean;
   forceCollapsed: boolean | null;
   onToggle: () => void;
+  sortOption: SortOption;
 }
 
 const statusOrder: Record<string, number> = {
@@ -28,6 +31,7 @@ export function NamespaceSection({
   scalingEnabled,
   forceCollapsed,
   onToggle,
+  sortOption,
 }: NamespaceSectionProps) {
   const [localCollapsed, setLocalCollapsed] = useState(false);
   const { theme } = useTheme();
@@ -48,9 +52,19 @@ export function NamespaceSection({
   };
 
   const sortedDeployments = [...deployments].sort((a, b) => {
-    const orderDiff = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
-    if (orderDiff !== 0) return orderDiff;
-    return a.name.localeCompare(b.name);
+    switch (sortOption) {
+      case 'name-asc':
+        return a.name.localeCompare(b.name);
+      case 'name-desc':
+        return b.name.localeCompare(a.name);
+      case 'replicas-desc':
+        return b.replicas.desired - a.replicas.desired;
+      case 'status':
+      default:
+        const orderDiff = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+        if (orderDiff !== 0) return orderDiff;
+        return a.name.localeCompare(b.name);
+    }
   });
 
   const runningCount = deployments.filter((d) => d.status === 'running').length;
