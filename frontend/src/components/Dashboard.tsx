@@ -12,12 +12,19 @@ export function Dashboard({ config }: DashboardProps) {
     useDeployments(config.settings.pollingInterval);
 
   const [collapsedAll, setCollapsedAll] = useState<boolean | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Group deployments by namespace and get unique namespaces
   const { groupedDeployments, namespaces } = useMemo(() => {
     const grouped: Record<string, Deployment[]> = {};
+    const search = searchTerm.toLowerCase().trim();
 
     for (const deployment of deployments) {
+      // Filter by search term
+      if (search && !deployment.name.toLowerCase().includes(search)) {
+        continue;
+      }
+
       if (!grouped[deployment.namespace]) {
         grouped[deployment.namespace] = [];
       }
@@ -28,7 +35,7 @@ export function Dashboard({ config }: DashboardProps) {
     const nsList = Object.keys(grouped).sort();
 
     return { groupedDeployments: grouped, namespaces: nsList };
-  }, [deployments]);
+  }, [deployments, searchTerm]);
 
   const handleScale = async (namespace: string, name: string, replicas: number) => {
     try {
@@ -74,7 +81,24 @@ export function Dashboard({ config }: DashboardProps) {
           <div style={{ fontSize: '14px', color: '#6b7280' }}>Stopped</div>
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Search deployments..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '14px',
+              width: '200px',
+              outline: 'none',
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setCollapsedAll(false)}
             style={{
