@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/k8s-dashboard
+  DOCKER_IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/k8s-pwa-dashboard
 
 jobs:
   build-and-push:

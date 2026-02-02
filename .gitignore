@@ -2,3 +2,6 @@ node_modules/
 dist/
 .env
 *.log
+
+# Local config (use namespaces.yaml.example as template)
+config/namespaces.yaml

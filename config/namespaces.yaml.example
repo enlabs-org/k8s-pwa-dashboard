@@ -1,0 +1,19 @@
+version: "1.0"
+
+# Namespaces to exclude from dashboard (blacklist)
+# All other namespaces will be shown
+excludeNamespaces:
+  - kube-system
+  - kube-public
+  - kube-node-lease
+  - default
+  # Add more namespaces to exclude:
+  # - monitoring
+  # - logging
+
+settings:
+  # Polling interval in milliseconds
+  pollingInterval: 5000
+
+  # Enable/disable scaling functionality
+  scalingEnabled: true
