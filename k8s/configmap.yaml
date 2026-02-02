@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-dashboard-config
+  namespace: k8s-dashboard
+  labels:
+    app.kubernetes.io/name: k8s-dashboard
+data:
+  namespaces.yaml: |
+    version: "1.0"
+    namespaces:
+      - name: "default"
+        displayName: "Default"
+        priority: 1
+      - name: "kube-system"
+        displayName: "Kube System"
+        priority: 2
+    settings:
+      pollingInterval: 5000
+      scalingEnabled: true
