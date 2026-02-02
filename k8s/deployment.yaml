@@ -14,7 +14,7 @@ spec:
       labels:
         app.kubernetes.io/name: k8s-pwa-dashboard
     spec:
-      serviceAccountName: k8s-dashboard
+      serviceAccountName: k8s-pwa-dashboard
       containers:
         - name: dashboard
           image: ghcr.io/enlabs-org/k8s-pwa-dashboard:latest
