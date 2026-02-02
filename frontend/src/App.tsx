@@ -45,7 +45,7 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 24px' }}>
+      <main style={{ padding: '0 24px 24px' }}>
         {isLoading && (
           <div style={{ textAlign: 'center', padding: '48px', color: c.textSecondary }}>
             Loading configuration...
