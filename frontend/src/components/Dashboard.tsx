@@ -8,14 +8,24 @@ interface DashboardProps {
   config: AppConfig;
 }
 
+type StatusFilter = 'all' | 'running' | 'stopped';
+
 export function Dashboard({ config }: DashboardProps) {
   const { deployments, summary, isLoading, error, scaleDeployment, isScaling, refetch } =
     useDeployments(config.settings.pollingInterval);
 
   const [collapsedAll, setCollapsedAll] = useState<boolean | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [namespaceFilter, setNamespaceFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const { theme } = useTheme();
   const c = colors[theme];
+
+  // Get all unique namespaces for the filter dropdown
+  const allNamespaces = useMemo(() => {
+    const nsSet = new Set(deployments.map((d) => d.namespace));
+    return Array.from(nsSet).sort();
+  }, [deployments]);
 
   // Group deployments by namespace and get unique namespaces
   const { groupedDeployments, namespaces } = useMemo(() => {
@@ -25,6 +35,19 @@ export function Dashboard({ config }: DashboardProps) {
     for (const deployment of deployments) {
       // Filter by search term
       if (search && !deployment.name.toLowerCase().includes(search)) {
+        continue;
+      }
+
+      // Filter by namespace
+      if (namespaceFilter !== 'all' && deployment.namespace !== namespaceFilter) {
+        continue;
+      }
+
+      // Filter by status
+      if (statusFilter === 'running' && deployment.status !== 'running') {
+        continue;
+      }
+      if (statusFilter === 'stopped' && deployment.status !== 'scaled_to_zero') {
         continue;
       }
 
@@ -38,7 +61,7 @@ export function Dashboard({ config }: DashboardProps) {
     const nsList = Object.keys(grouped).sort();
 
     return { groupedDeployments: grouped, namespaces: nsList };
-  }, [deployments, searchTerm]);
+  }, [deployments, searchTerm, namespaceFilter, statusFilter]);
 
   const handleScale = async (namespace: string, name: string, replicas: number) => {
     try {
@@ -46,6 +69,17 @@ export function Dashboard({ config }: DashboardProps) {
     } catch (err) {
       alert(`Failed to scale ${namespace}/${name}: ${(err as Error).message}`);
     }
+  };
+
+  const selectStyle: React.CSSProperties = {
+    padding: '8px 12px',
+    border: `1px solid ${c.inputBorder}`,
+    borderRadius: '6px',
+    fontSize: '14px',
+    outline: 'none',
+    backgroundColor: c.inputBg,
+    color: c.text,
+    cursor: 'pointer',
   };
 
   return (
@@ -85,10 +119,10 @@ export function Dashboard({ config }: DashboardProps) {
           <div style={{ fontSize: '14px', color: c.textSecondary }}>Stopped</div>
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="text"
-            placeholder="Search deployments..."
+            placeholder="Search..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
@@ -96,12 +130,35 @@ export function Dashboard({ config }: DashboardProps) {
               border: `1px solid ${c.inputBorder}`,
               borderRadius: '6px',
               fontSize: '14px',
-              width: '200px',
+              width: '140px',
               outline: 'none',
               backgroundColor: c.inputBg,
               color: c.text,
             }}
           />
+
+          <select
+            value={namespaceFilter}
+            onChange={(e) => setNamespaceFilter(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="all">All NS</option>
+            {allNamespaces.map((ns) => (
+              <option key={ns} value={ns}>
+                {ns}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            style={selectStyle}
+          >
+            <option value="all">All Status</option>
+            <option value="running">Running</option>
+            <option value="stopped">Stopped</option>
+          </select>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -183,6 +240,19 @@ export function Dashboard({ config }: DashboardProps) {
           onToggle={() => setCollapsedAll(null)}
         />
       ))}
+
+      {/* Empty state */}
+      {namespaces.length === 0 && !isLoading && !error && (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '48px',
+            color: c.textSecondary,
+          }}
+        >
+          No deployments match your filters
+        </div>
+      )}
     </div>
   );
 }
