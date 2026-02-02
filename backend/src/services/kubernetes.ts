@@ -119,19 +119,21 @@ export class KubernetesService {
         const release = ingress.metadata?.labels?.['release'] ?? ingress.metadata?.name;
         if (!release) continue;
 
-        const urls: string[] = [];
         const rules = ingress.spec?.rules ?? [];
         const hasTls = (ingress.spec?.tls?.length ?? 0) > 0;
 
         for (const rule of rules) {
           if (rule.host) {
             const protocol = hasTls ? 'https' : 'http';
-            urls.push(`${protocol}://${rule.host}`);
-          }
-        }
+            const url = `${protocol}://${rule.host}`;
 
-        if (urls.length > 0) {
-          urlMap.set(release, urls);
+            // Merge URLs for same release
+            const existing = urlMap.get(release) ?? [];
+            if (!existing.includes(url)) {
+              existing.push(url);
+              urlMap.set(release, existing);
+            }
+          }
         }
       }
     } catch (error) {
