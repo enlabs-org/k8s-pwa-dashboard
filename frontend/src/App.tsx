@@ -32,7 +32,7 @@ export function App() {
           marginBottom: '24px',
         }}
       >
-        <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 600 }}>K8s Dashboard</h1>
+        <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 600 }}>K8s Preview App Dashboard</h1>
       </header>
 
       {/* Main Content */}

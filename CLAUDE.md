@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-K8s Dashboard - a web dashboard for monitoring and scaling Kubernetes deployments. Single container serving both React frontend and Express API backend.
+K8s Preview App Dashboard (k8s-pwa-dashboard) - a web dashboard for monitoring and scaling Kubernetes deployments. Single container serving both React frontend and Express API backend.
 
 ## Development Commands
 

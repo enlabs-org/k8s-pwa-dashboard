@@ -54,7 +54,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`K8s Dashboard Backend running on port ${PORT}`);
+  console.log(`K8s Preview App Dashboard running on port ${PORT}`);
   console.log(`Health: http://localhost:${PORT}/api/v1/health`);
   console.log(`Deployments: http://localhost:${PORT}/api/v1/deployments`);
 });

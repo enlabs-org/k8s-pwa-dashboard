@@ -1,5 +1,5 @@
 {
-  "name": "k8s-dashboard-backend",
+  "name": "k8s-pwa-dashboard-backend",
   "version": "1.0.0",
   "description": "Backend for K8s Dashboard",
   "main": "dist/index.js",
