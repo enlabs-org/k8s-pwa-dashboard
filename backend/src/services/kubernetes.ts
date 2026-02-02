@@ -27,10 +27,10 @@ export class KubernetesService {
   async getNamespaces(excludeList: string[]): Promise<string[]> {
     try {
       const response = await this.coreApi.listNamespace();
-      const items = response.body?.items ?? response.items ?? [];
+      const items = response.body.items;
       const excludeSet = new Set(excludeList.map(n => n.toLowerCase()));
 
-      return (items as k8s.V1Namespace[])
+      return items
         .map(ns => ns.metadata?.name ?? '')
         .filter(name => name && !excludeSet.has(name.toLowerCase()))
         .sort();
@@ -44,7 +44,7 @@ export class KubernetesService {
     try {
       const versionApi = this.kubeConfig.makeApiClient(k8s.VersionApi);
       const response = await versionApi.getCode();
-      return response.gitVersion ?? 'unknown';
+      return response.body.gitVersion;
     } catch {
       return 'unknown';
     }
@@ -65,8 +65,8 @@ export class KubernetesService {
         this.appsApi.listNamespacedDeployment(namespace),
         this.getIngressUrls(namespace),
       ]);
-      const items = deploymentsRes.body?.items ?? deploymentsRes.items ?? [];
-      return items.map((item: k8s.V1Deployment) => {
+      const items = deploymentsRes.body.items;
+      return items.map((item) => {
         const name = item.metadata?.name ?? '';
         const release = item.metadata?.labels?.['release'] ?? name;
         const urls = ingressUrls.get(release) ?? ingressUrls.get(name) ?? [];
@@ -81,8 +81,7 @@ export class KubernetesService {
   async getDeployment(namespace: string, name: string): Promise<Deployment | null> {
     try {
       const response = await this.appsApi.readNamespacedDeployment(name, namespace);
-      const deployment = response.body ?? response;
-      return this.mapDeployment(deployment as k8s.V1Deployment);
+      return this.mapDeployment(response.body);
     } catch (error: unknown) {
       const statusCode = (error as { response?: { statusCode?: number } }).response?.statusCode
         ?? (error as { statusCode?: number }).statusCode;
@@ -97,13 +96,13 @@ export class KubernetesService {
     try {
       // Read current scale
       const scaleRes = await this.appsApi.readNamespacedDeploymentScale(name, namespace);
-      const scale = scaleRes.body ?? scaleRes;
+      const scale = scaleRes.body;
 
       // Update replicas
-      (scale as k8s.V1Scale).spec = { replicas };
+      scale.spec = { replicas };
 
       // Replace scale
-      await this.appsApi.replaceNamespacedDeploymentScale(name, namespace, scale as k8s.V1Scale);
+      await this.appsApi.replaceNamespacedDeploymentScale(name, namespace, scale);
     } catch (error) {
       console.error(`Error scaling deployment ${namespace}/${name}:`, error);
       throw error;
@@ -114,9 +113,9 @@ export class KubernetesService {
     const urlMap = new Map<string, string[]>();
     try {
       const response = await this.networkingApi.listNamespacedIngress(namespace);
-      const items = response.body?.items ?? response.items ?? [];
+      const items = response.body.items;
 
-      for (const ingress of items as k8s.V1Ingress[]) {
+      for (const ingress of items) {
         const release = ingress.metadata?.labels?.['release'] ?? ingress.metadata?.name;
         if (!release) continue;
 
