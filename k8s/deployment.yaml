@@ -18,8 +18,8 @@ spec:
       serviceAccountName: k8s-dashboard
       containers:
         - name: dashboard
-          image: k8s-dashboard:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/enlabs-org/k8s-pwa-dashboard:latest
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 3001
