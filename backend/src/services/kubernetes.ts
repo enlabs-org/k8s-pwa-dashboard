@@ -1,5 +1,6 @@
 import * as k8s from '@kubernetes/client-node';
-import { Deployment, DeploymentStatus, ReplicaInfo } from '../types';
+import { Deployment, DeploymentStatus, ReplicaInfo, DeploymentDetail, PodInfo, ContainerInfo, PodLogsResponse, FileInfo, DirectoryListingResponse, FileContentResponse } from '../types';
+import { Exec } from '@kubernetes/client-node';
 
 export class KubernetesService {
   private appsApi: k8s.AppsV1Api;
@@ -197,6 +198,305 @@ export class KubernetesService {
 
     // Partially ready
     return 'pending';
+  }
+
+  async getDeploymentDetail(namespace: string, name: string): Promise<DeploymentDetail | null> {
+    try {
+      const [deploymentRes, pods] = await Promise.all([
+        this.appsApi.readNamespacedDeployment(name, namespace),
+        this.getPodsForDeployment(namespace, name),
+      ]);
+
+      const deployment = deploymentRes.body;
+      const urls = await this.getIngressUrls(namespace);
+      const release = deployment.metadata?.labels?.['release'] ?? name;
+      const deploymentUrls = urls.get(release) ?? urls.get(name) ?? [];
+
+      return {
+        ...this.mapDeployment(deployment, deploymentUrls),
+        pods,
+        containers: this.extractContainerInfo(deployment),
+      };
+    } catch (error) {
+      const statusCode = (error as any).response?.statusCode ?? (error as any).statusCode;
+      if (statusCode === 404) return null;
+      throw error;
+    }
+  }
+
+  async getPodsForDeployment(namespace: string, deploymentName: string): Promise<PodInfo[]> {
+    try {
+      // First, get the deployment to find its selector labels
+      const deploymentRes = await this.appsApi.readNamespacedDeployment(deploymentName, namespace);
+      const selector = deploymentRes.body.spec?.selector?.matchLabels;
+
+      if (!selector) return [];
+
+      // Build label selector string
+      const labelSelector = Object.entries(selector)
+        .map(([key, value]) => `${key}=${value}`)
+        .join(',');
+
+      // Fetch pods matching the selector
+      const podsRes = await this.coreApi.listNamespacedPod(
+        namespace,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        labelSelector
+      );
+
+      return podsRes.body.items.map(pod => this.mapPodInfo(pod));
+    } catch (error) {
+      console.error(`Error fetching pods for ${namespace}/${deploymentName}:`, error);
+      return [];
+    }
+  }
+
+  private mapPodInfo(pod: k8s.V1Pod): PodInfo {
+    const status = pod.status;
+    const metadata = pod.metadata;
+
+    // Calculate age
+    const createdAt = metadata?.creationTimestamp;
+    const age = createdAt ? this.calculateAge(createdAt) : 'unknown';
+
+    // Get container statuses
+    const containerStatuses = (status?.containerStatuses ?? []).map(cs => ({
+      name: cs.name,
+      ready: cs.ready,
+      restartCount: cs.restartCount,
+      state: cs.state?.running ? 'running'
+           : cs.state?.waiting ? 'waiting'
+           : cs.state?.terminated ? 'terminated'
+           : 'unknown',
+    }));
+
+    // Calculate total restart count
+    const totalRestartCount = containerStatuses.reduce((sum, cs) => sum + cs.restartCount, 0);
+
+    return {
+      name: metadata?.name ?? 'unknown',
+      status: status?.phase ?? 'Unknown',
+      restartCount: totalRestartCount,
+      age,
+      containerStatuses,
+    };
+  }
+
+  private extractContainerInfo(deployment: k8s.V1Deployment): ContainerInfo[] {
+    const containers = deployment.spec?.template?.spec?.containers ?? [];
+
+    return containers.map(container => {
+      const [image, tag] = this.parseImageTag(container.image ?? '');
+
+      return {
+        name: container.name,
+        image,
+        imageTag: tag,
+        resources: {
+          limits: {
+            cpu: container.resources?.limits?.cpu,
+            memory: container.resources?.limits?.memory,
+          },
+          requests: {
+            cpu: container.resources?.requests?.cpu,
+            memory: container.resources?.requests?.memory,
+          },
+        },
+      };
+    });
+  }
+
+  private parseImageTag(imageStr: string): [string, string] {
+    const lastColon = imageStr.lastIndexOf(':');
+    if (lastColon === -1) return [imageStr, 'latest'];
+
+    const image = imageStr.substring(0, lastColon);
+    const tag = imageStr.substring(lastColon + 1);
+
+    return [image, tag];
+  }
+
+  private calculateAge(createdAt: Date): string {
+    const now = new Date();
+    const diff = now.getTime() - createdAt.getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d`;
+    if (hours > 0) return `${hours}h`;
+    if (minutes > 0) return `${minutes}m`;
+    return `${seconds}s`;
+  }
+
+  async getPodLogs(namespace: string, podName: string, containerName?: string, tailLines: number = 100): Promise<PodLogsResponse> {
+    try {
+      const logs = await this.coreApi.readNamespacedPodLog(
+        podName,
+        namespace,
+        containerName, // container name - if undefined, K8s will error if multiple containers
+        false, // follow
+        undefined, // insecureSkipTLSVerifyBackend
+        undefined, // limitBytes
+        undefined, // pretty
+        false, // previous
+        undefined, // sinceSeconds
+        tailLines, // tailLines
+        false // timestamps
+      );
+
+      return {
+        podName,
+        logs: logs.body,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(`Error fetching logs for pod ${namespace}/${podName}:`, error);
+      throw error;
+    }
+  }
+
+  async execInPod(namespace: string, podName: string, containerName: string, command: string[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const exec = new Exec(this.kubeConfig);
+      let stdout = '';
+      let stderr = '';
+      let isResolved = false;
+
+      // Create writable streams to enable stdout/stderr capture
+      const { Writable } = require('stream');
+
+      const stdoutStream = new Writable({
+        write(chunk: any, encoding: string, callback: Function) {
+          stdout += chunk.toString();
+          callback();
+        }
+      });
+
+      const stderrStream = new Writable({
+        write(chunk: any, encoding: string, callback: Function) {
+          stderr += chunk.toString();
+          callback();
+        }
+      });
+
+      exec.exec(
+        namespace,
+        podName,
+        containerName,
+        command,
+        stdoutStream,
+        stderrStream,
+        null,
+        false,
+        (status) => {
+          if (isResolved) return;
+          isResolved = true;
+
+          if (status.status === 'Success' || status.status === 'Failure') {
+            if (stdout) {
+              console.log('Exec completed, stdout:', stdout.substring(0, 200));
+              resolve(stdout);
+            } else if (stderr) {
+              console.error('Exec stderr:', stderr);
+              reject(new Error(`Exec stderr: ${stderr}`));
+            } else {
+              resolve('');
+            }
+          } else {
+            console.error('Exec status:', status);
+            reject(new Error(`Exec failed: ${status.message || 'Unknown error'}`));
+          }
+        }
+      ).catch((err) => {
+        if (!isResolved) {
+          isResolved = true;
+          console.error('Exec error:', err);
+          reject(err);
+        }
+      });
+    });
+  }
+
+  async listDirectory(namespace: string, podName: string, containerName: string, path: string = '/'): Promise<DirectoryListingResponse> {
+    try {
+      // Use ls -lAh to get file details (hidden files, human-readable sizes)
+      const output = await this.execInPod(namespace, podName, containerName, ['ls', '-lAh', path]);
+
+      console.log('ls output:', output);
+
+      const files: FileInfo[] = [];
+      const lines = output.trim().split('\n');
+
+      // Skip first line if it's "total ..."
+      const startIndex = lines[0]?.startsWith('total') ? 1 : 0;
+
+      for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Parse ls -l output: drwxr-xr-x 2 user group 4.0K Jan 1 12:00 filename
+        const parts = line.split(/\s+/);
+
+        // Need at least permissions, links, user, group, size, date parts, and filename
+        if (parts.length < 7) continue;
+
+        const permissions = parts[0];
+        const size = parts[4];
+
+        // Filename is everything after the date/time (handles filenames with spaces)
+        // Date can be "Jan 1 12:00" or "Oct 8 22:46" - so we skip first 5-8 parts
+        let nameStartIdx = 8;
+
+        // If month is 3 chars, day is 1-2 digits, time is HH:MM, that's typically parts 5,6,7
+        // So filename starts at part 8
+        if (parts.length >= 9) {
+          nameStartIdx = 8;
+        } else if (parts.length >= 7) {
+          nameStartIdx = 6;
+        }
+
+        const name = parts.slice(nameStartIdx).join(' ');
+
+        // Skip . and .. and hidden files (starting with .)
+        if (name === '.' || name === '..' || !name || name.startsWith('.')) continue;
+
+        const type = permissions.startsWith('d') ? 'directory' : 'file';
+
+        files.push({
+          name,
+          type,
+          permissions,
+          size: type === 'file' ? parseFloat(size) : undefined,
+        });
+      }
+
+      console.log('Parsed files:', files);
+
+      return { path, files };
+    } catch (error) {
+      console.error(`Error listing directory ${namespace}/${podName}:${path}:`, error);
+      throw error;
+    }
+  }
+
+  async readFileContent(namespace: string, podName: string, containerName: string, filePath: string): Promise<FileContentResponse> {
+    try {
+      const content = await this.execInPod(namespace, podName, containerName, ['cat', filePath]);
+
+      return {
+        path: filePath,
+        content,
+        size: Buffer.byteLength(content, 'utf8'),
+      };
+    } catch (error) {
+      console.error(`Error reading file ${namespace}/${podName}:${filePath}:`, error);
+      throw error;
+    }
   }
 }
 

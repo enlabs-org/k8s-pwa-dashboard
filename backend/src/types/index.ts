@@ -66,3 +66,64 @@ export interface ApiResponse<T> {
   data?: T;
   error?: ApiError;
 }
+
+export interface ContainerStatus {
+  name: string;
+  ready: boolean;
+  restartCount: number;
+  state: string;
+}
+
+export interface PodInfo {
+  name: string;
+  status: string;
+  restartCount: number;
+  age: string;
+  containerStatuses: ContainerStatus[];
+}
+
+export interface ContainerInfo {
+  name: string;
+  image: string;
+  imageTag: string;
+  resources: {
+    limits?: {
+      cpu?: string;
+      memory?: string;
+    };
+    requests?: {
+      cpu?: string;
+      memory?: string;
+    };
+  };
+}
+
+export interface DeploymentDetail extends Deployment {
+  pods: PodInfo[];
+  containers: ContainerInfo[];
+}
+
+export interface PodLogsResponse {
+  podName: string;
+  logs: string;
+  timestamp: string;
+}
+
+export interface FileInfo {
+  name: string;
+  type: 'file' | 'directory';
+  size?: number;
+  permissions?: string;
+  modifiedAt?: string;
+}
+
+export interface DirectoryListingResponse {
+  path: string;
+  files: FileInfo[];
+}
+
+export interface FileContentResponse {
+  path: string;
+  content: string;
+  size: number;
+}

@@ -7,16 +7,16 @@ interface StatusBadgeProps {
 
 const statusConfig = {
   light: {
-    running: { label: 'Running', color: '#166534', bg: '#dcfce7' },
-    error: { label: 'Error', color: '#991b1b', bg: '#fee2e2' },
-    pending: { label: 'Pending', color: '#854d0e', bg: '#fef9c3' },
-    scaled_to_zero: { label: 'Stopped', color: '#374151', bg: '#e5e7eb' },
+    running: { label: 'Running', color: '#166534', bg: '#fff', border: '#22c55e' },
+    error: { label: 'Error', color: '#991b1b', bg: '#fff', border: '#ef4444' },
+    pending: { label: 'Pending', color: '#854d0e', bg: '#fff', border: '#eab308' },
+    scaled_to_zero: { label: 'Stopped', color: '#374151', bg: '#fff', border: '#9ca3af' },
   },
   dark: {
-    running: { label: 'Running', color: '#bbf7d0', bg: '#14532d' },
-    error: { label: 'Error', color: '#fecaca', bg: '#7f1d1d' },
-    pending: { label: 'Pending', color: '#fef08a', bg: '#713f12' },
-    scaled_to_zero: { label: 'Stopped', color: '#9ca3af', bg: '#374151' },
+    running: { label: 'Running', color: '#22c55e', bg: '#14532d', border: '#22c55e' },
+    error: { label: 'Error', color: '#fca5a5', bg: '#7f1d1d', border: '#ef4444' },
+    pending: { label: 'Pending', color: '#fde047', bg: '#713f12', border: '#eab308' },
+    scaled_to_zero: { label: 'Stopped', color: '#d1d5db', bg: '#374151', border: '#6b7280' },
   },
 };
 
@@ -31,9 +31,10 @@ export function StatusBadge({ status }: StatusBadgeProps) {
         padding: '2px 8px',
         borderRadius: '4px',
         fontSize: '12px',
-        fontWeight: 500,
+        fontWeight: 600,
         color: config.color,
         backgroundColor: config.bg,
+        border: `2px solid ${config.border}`,
       }}
     >
       {config.label}

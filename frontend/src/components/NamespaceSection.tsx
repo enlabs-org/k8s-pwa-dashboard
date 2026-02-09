@@ -33,7 +33,8 @@ export function NamespaceSection({
   onToggle,
   sortOption,
 }: NamespaceSectionProps) {
-  const [localCollapsed, setLocalCollapsed] = useState(false);
+  // Initialize as collapsed - use forceCollapsed if provided, otherwise default to true
+  const [localCollapsed, setLocalCollapsed] = useState(() => forceCollapsed ?? true);
   const { theme } = useTheme();
   const c = colors[theme];
 
@@ -71,13 +72,21 @@ export function NamespaceSection({
   const errorCount = deployments.filter((d) => d.status === 'error').length;
 
   return (
-    <div style={{ marginBottom: '24px' }}>
+    <div
+      style={{
+        marginBottom: '16px',
+        backgroundColor: c.bgCard,
+        borderRadius: '8px',
+        padding: '16px',
+        boxShadow: theme === 'light' ? '0 1px 3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.3)',
+        transition: 'background-color 0.2s',
+      }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          padding: '12px 0',
           cursor: 'pointer',
           userSelect: 'none',
         }}
@@ -137,7 +146,7 @@ export function NamespaceSection({
       </div>
 
       {!isCollapsed && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '32px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
           {sortedDeployments.length === 0 ? (
             <p style={{ color: c.textSecondary, fontStyle: 'italic' }}>No deployments in this namespace</p>
           ) : (

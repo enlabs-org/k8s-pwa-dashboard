@@ -16,7 +16,7 @@ export function Dashboard({ config }: DashboardProps) {
   const { deployments, summary, isLoading, error, scaleDeployment, isScaling, refetch } =
     useDeployments(config.settings.pollingInterval);
 
-  const [collapsedAll, setCollapsedAll] = useState<boolean | null>(null);
+  const [collapsedAll, setCollapsedAll] = useState<boolean | null>(true);
   const [masterCollapsed, setMasterCollapsed] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [namespaceFilter, setNamespaceFilter] = useState<string>('all');

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Deployment } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { ScaleControls } from './ScaleControls';
@@ -11,12 +12,28 @@ interface DeploymentCardProps {
 }
 
 export function DeploymentCard({ deployment, onScale, isScaling, scalingEnabled }: DeploymentCardProps) {
-  const { name, status, replicas, urls } = deployment;
+  const { name, namespace, status, replicas, urls } = deployment;
   const { theme } = useTheme();
   const c = colors[theme];
+  const navigate = useNavigate();
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on links or buttons
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'A' ||
+      target.tagName === 'BUTTON' ||
+      target.closest('button') ||
+      target.closest('a')
+    ) {
+      return;
+    }
+    navigate(`/deployments/${namespace}/${name}`);
+  };
 
   return (
     <div
+      onClick={handleCardClick}
       style={{
         padding: '16px',
         backgroundColor: c.bgCard,
@@ -26,7 +43,18 @@ export function DeploymentCard({ deployment, onScale, isScaling, scalingEnabled 
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '16px',
-        transition: 'background-color 0.2s',
+        transition: 'all 0.2s',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow =
+          theme === 'light' ? '0 4px 6px rgba(0,0,0,0.15)' : '0 4px 6px rgba(0,0,0,0.5)';
+        e.currentTarget.style.transform = 'translateY(-1px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow =
+          theme === 'light' ? '0 1px 3px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.3)';
+        e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>

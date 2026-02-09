@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { fetchConfig } from './api/deployments';
 import { Dashboard } from './components/Dashboard';
+import { DeploymentDetail } from './components/DeploymentDetail';
 import { AppConfig } from './types';
 import { ThemeProvider, useTheme, colors } from './context/ThemeContext';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -67,7 +69,15 @@ function AppContent() {
           </div>
         )}
 
-        {config && <Dashboard config={config} />}
+        {config && (
+          <Routes>
+            <Route path="/" element={<Dashboard config={config} />} />
+            <Route
+              path="/deployments/:namespace/:name"
+              element={<DeploymentDetail config={config} />}
+            />
+          </Routes>
+        )}
       </main>
     </div>
   );
